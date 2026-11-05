@@ -1217,3 +1217,33 @@ table.quizreviewsummary td.cell {
         page-break-inside: avoid;
     }
 }
+
+/* ==========================================================================
+   Fix #101: Responsive Quiz Navigation Drawer Overflow (Issue #101)
+   Prevents question buttons and status flags from truncating on narrow screens.
+   ========================================================================== */
+.path-mod-quiz #page-mod-quiz-attempt .qn_buttons,
+.path-mod-quiz #page-mod-quiz-review .qn_buttons {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 4px;
+    max-width: 100% !important;
+}
+
+.path-mod-quiz .qnbutton {
+    flex: 0 1 auto;
+    min-width: 32px;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+}
+
+@media (max-width: 768px) {
+    .path-mod-quiz .qnbutton {
+        padding: 4px 6px;
+        font-size: 0.85rem;
+    }
+    .path-mod-quiz #mod_quiz_navblock {
+        overflow-x: hidden;
+        max-width: 100%;
+    }
+}
