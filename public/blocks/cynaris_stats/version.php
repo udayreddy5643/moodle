@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_cynaris_stats'; // Full name of the plugin (Frankenstyle).
-$plugin->version   = 2026110502;            // Plugin release version (Date: YYYYMMDDXX).
+$plugin->version   = 2026110503;            // Plugin release version (Date: YYYYMMDDXX).
 $plugin->requires  = 2026100200;            // Requires this Moodle version or higher.
 $plugin->maturity  = MATURITY_ALPHA;        // Development maturity stage.
-$plugin->release   = 'v1.2.0';              // Human-readable version string with AI Quiz Generator.
+$plugin->release   = 'v1.3.0';              // Human-readable version string with AI Recommendations.

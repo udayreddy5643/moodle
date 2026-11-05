@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Cynaris Stats Block with Dynamic Chart.js Analytics, AI Tutor, and AI Quiz Generator.
+ * Cynaris Stats Block with Analytics, AI Tutor, AI Quiz, and AI Learning Recommendations.
  *
  * @package    block_cynaris_stats
  * @copyright  2026 Uday Reddy (b.udayreddy5643@gmail.com)
@@ -57,7 +57,7 @@ class block_cynaris_stats extends block_base {
     }
 
     /**
-     * Assemble and return block content with tabbed Analytics, AI Tutor, and Quiz Generator views.
+     * Assemble and return block content with tabbed multi-agent AI interface.
      *
      * @return stdClass
      */
@@ -80,11 +80,12 @@ class block_cynaris_stats extends block_base {
         $ajax_analytics_url = $CFG->wwwroot . '/blocks/cynaris_stats/ajax.php';
         $ajax_ai_url        = $CFG->wwwroot . '/blocks/cynaris_stats/ai_tutor_api.php';
         $ajax_quiz_url      = $CFG->wwwroot . '/blocks/cynaris_stats/ai_quiz_api.php';
+        $ajax_recs_url      = $CFG->wwwroot . '/blocks/cynaris_stats/ai_recommendations_api.php';
 
         $html = '';
         $html .= html_writer::start_div('cynaris-stats-wrapper p-2');
 
-        // Navigation Tabs: Analytics vs. AI Tutor vs. AI Quiz Generator
+        // Navigation Tabs: Analytics vs. AI Tutor vs. AI Quiz vs. AI Recs
         $html .= '
         <div class="btn-group btn-group-sm w-100 mb-2" role="group" aria-label="Cynaris View Switcher">
             <button type="button" id="tab-btn-analytics" class="btn btn-primary" onclick="window.cynarisSwitchTab(\'analytics\')">
@@ -95,6 +96,9 @@ class block_cynaris_stats extends block_base {
             </button>
             <button type="button" id="tab-btn-quizgen" class="btn btn-outline-primary" onclick="window.cynarisSwitchTab(\'quizgen\')">
                 📝 AI Quiz
+            </button>
+            <button type="button" id="tab-btn-recommendations" class="btn btn-outline-primary" onclick="window.cynarisSwitchTab(\'recommendations\')">
+                💡 AI Recs
             </button>
         </div>
         ';
@@ -137,7 +141,7 @@ class block_cynaris_stats extends block_base {
         $html .= html_writer::end_div();
         $html .= html_writer::end_div();
 
-        $html .= html_writer::end_div(); // End metrics row
+        $html .= html_writer::end_div();
 
         // Chart 1: Bar Chart (Course Completion %)
         $html .= html_writer::start_div('chart-container mb-3 border rounded p-2 bg-white shadow-sm', [
@@ -260,7 +264,6 @@ class block_cynaris_stats extends block_base {
             <p class="small text-muted mb-0">Generate curriculum MCQs from syllabus directly to Question Bank and publish Quiz.</p>
         </div>
 
-        <!-- Configuration Controls -->
         <div class="mb-2">
             <label class="small font-weight-bold text-secondary mb-1">Select Course:</label>
             <select id="cynaris-quiz-course" class="form-control form-control-sm mb-2">
@@ -292,13 +295,11 @@ class block_cynaris_stats extends block_base {
             </button>
         </div>
 
-        <!-- Quiz Loading Indicator -->
         <div id="cynaris-quiz-loading" class="text-center my-3" style="display: none;">
             <div class="spinner-border spinner-border-sm text-success" role="status"></div>
             <span class="small text-muted ml-2">Generating MCQs & writing to Question Bank...</span>
         </div>
 
-        <!-- Quiz Generated Result Card -->
         <div id="cynaris-quiz-result-card" class="border rounded p-2 bg-white shadow-sm mt-2" style="display: none;">
             <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-2">
                 <span id="cynaris-quiz-provider-pill" class="badge badge-success bg-success text-white"></span>
@@ -320,6 +321,92 @@ class block_cynaris_stats extends block_base {
 
         $html .= html_writer::end_div(); // End tab pane quizgen
 
+        // =====================================================================
+        // TAB 4: AI Learning Recommendations (Gradebook & Completions Analysis)
+        // =====================================================================
+        $html .= html_writer::start_div('cynaris-tab-pane', ['id' => 'cynaris-pane-recommendations', 'style' => 'display: none;']);
+
+        $html .= '
+        <div class="border rounded p-2 mb-2 bg-light shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="badge badge-info bg-info text-white">📊 Performance Diagnostic</span>
+                <span class="badge badge-success bg-success text-white">💡 Smart Advisory</span>
+            </div>
+            <p class="small text-muted mb-0">Derive targeted learning plans from student course completions, grade averages, and login logs.</p>
+        </div>
+
+        <!-- Student Selector & Outage Simulation -->
+        <div class="mb-2">
+            <label class="small font-weight-bold text-secondary mb-1">Select Learner Profile:</label>
+            <select id="cynaris-rec-user" class="form-control form-control-sm mb-2">
+                <option value="3">Rahul Sharma (rahul.s • 90.3% • Top Performer)</option>
+                <option value="4">Priya Patel (priya.p • 89.8% • Top Performer)</option>
+                <option value="5">Amit Verma (amit.v • 71.5% • Steady Achiever)</option>
+                <option value="6">Neha Gupta (neha.g • Assessment Pending)</option>
+            </select>
+
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="cynaris-rec-force-fallback" style="cursor: pointer;">
+                <label class="form-check-label small text-muted font-weight-bold" for="cynaris-rec-force-fallback" style="cursor: pointer;">
+                    Simulate Groq Outage (Test Fallback)
+                </label>
+            </div>
+
+            <button type="button" id="btn-cynaris-gen-recs" class="btn btn-info btn-sm w-100 text-white font-weight-bold">
+                🔍 Generate Personalized Learning Plan
+            </button>
+        </div>
+
+        <!-- Recommendations Loading -->
+        <div id="cynaris-rec-loading" class="text-center my-3" style="display: none;">
+            <div class="spinner-border spinner-border-sm text-info" role="status"></div>
+            <span class="small text-muted ml-2">Analyzing gradebook & generating advisory plan...</span>
+        </div>
+
+        <!-- Recommendations Result Card -->
+        <div id="cynaris-rec-result-card" class="border rounded p-2 bg-white shadow-sm mt-2" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-2">
+                <span id="cynaris-rec-provider-pill" class="badge badge-info bg-info text-white"></span>
+                <span id="cynaris-rec-latency-pill" class="badge badge-light bg-light text-muted border"></span>
+            </div>
+            <div id="cynaris-rec-failover-alert" class="alert alert-warning py-1 px-2 small mb-2" style="display: none;">
+                ⚠️ <strong>Failover Active:</strong> Primary provider failed. Generated via fallback.
+            </div>
+
+            <!-- Student Diagnostic Banner -->
+            <div class="p-2 border rounded bg-light mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <strong id="cynaris-rec-student-name" class="text-dark"></strong>
+                    <span id="cynaris-rec-persona-badge" class="badge badge-secondary bg-secondary text-white"></span>
+                </div>
+                <p id="cynaris-rec-summary" class="small text-muted mb-0"></p>
+            </div>
+
+            <!-- Strengths & Growth Areas -->
+            <div class="mb-2">
+                <small class="font-weight-bold text-success d-block">🌟 Key Strengths:</small>
+                <ul id="cynaris-rec-strengths" class="small pl-3 mb-2 text-dark"></ul>
+
+                <small class="font-weight-bold text-danger d-block">🎯 Growth Areas / Gaps:</small>
+                <ul id="cynaris-rec-gaps" class="small pl-3 mb-2 text-dark"></ul>
+            </div>
+
+            <!-- Action Plan -->
+            <div class="mb-2 border-top pt-2">
+                <small class="font-weight-bold text-primary d-block">🚀 Targeted Action Plan:</small>
+                <ol id="cynaris-rec-actions" class="small pl-3 mb-2 text-dark"></ol>
+            </div>
+
+            <!-- Viva Tip -->
+            <div class="p-2 border rounded bg-light border-info">
+                <small class="font-weight-bold text-info d-block">💬 Viva Voce Prep Focus:</small>
+                <p id="cynaris-rec-viva" class="small text-dark mb-0"></p>
+            </div>
+        </div>
+        ';
+
+        $html .= html_writer::end_div(); // End tab pane recommendations
+
         $html .= html_writer::end_div(); // End stats wrapper
 
         // Chart.js CDN and Client-side Application Controller
@@ -332,26 +419,31 @@ class block_cynaris_stats extends block_base {
             var analyticsAjaxUrl = ' . json_encode($ajax_analytics_url) . ';
             var aiAjaxUrl        = ' . json_encode($ajax_ai_url) . ';
             var quizAjaxUrl      = ' . json_encode($ajax_quiz_url) . ';
+            var recsAjaxUrl      = ' . json_encode($ajax_recs_url) . ';
 
-            // Tab Switching Controller (3 Tabs)
+            // Tab Switching Controller (4 Tabs)
             window.cynarisSwitchTab = function(tab) {
                 var paneAnalytics = document.getElementById("cynaris-pane-analytics");
                 var paneAi = document.getElementById("cynaris-pane-aitutor");
                 var paneQuiz = document.getElementById("cynaris-pane-quizgen");
+                var paneRecs = document.getElementById("cynaris-pane-recommendations");
 
                 var btnAnalytics = document.getElementById("tab-btn-analytics");
                 var btnAi = document.getElementById("tab-btn-aitutor");
                 var btnQuiz = document.getElementById("tab-btn-quizgen");
+                var btnRecs = document.getElementById("tab-btn-recommendations");
 
-                if (!paneAnalytics || !paneAi || !paneQuiz) return;
+                if (!paneAnalytics || !paneAi || !paneQuiz || !paneRecs) return;
 
                 paneAnalytics.style.display = "none";
                 paneAi.style.display = "none";
                 paneQuiz.style.display = "none";
+                paneRecs.style.display = "none";
 
                 btnAnalytics.className = "btn btn-outline-primary";
                 btnAi.className = "btn btn-outline-primary";
                 btnQuiz.className = "btn btn-outline-primary";
+                btnRecs.className = "btn btn-outline-primary";
 
                 if (tab === "aitutor") {
                     paneAi.style.display = "block";
@@ -359,6 +451,9 @@ class block_cynaris_stats extends block_base {
                 } else if (tab === "quizgen") {
                     paneQuiz.style.display = "block";
                     btnQuiz.className = "btn btn-primary";
+                } else if (tab === "recommendations") {
+                    paneRecs.style.display = "block";
+                    btnRecs.className = "btn btn-primary";
                 } else {
                     paneAnalytics.style.display = "block";
                     btnAnalytics.className = "btn btn-primary";
@@ -611,11 +706,86 @@ class block_cynaris_stats extends block_base {
                 })
                 .catch(function(err) {
                     console.error("AI Quiz Generator error:", err);
-                    alert("Network error generating quiz: " + err.message);
+                    alert("Network error: " + err.message);
                 })
                 .finally(function() {
                     if (loading) loading.style.display = "none";
                     if (btnGen) btnGen.disabled = false;
+                });
+            }
+
+            // 4. AI Learning Recommendations Handler
+            function handleGenerateRecommendations() {
+                var userSelect = document.getElementById("cynaris-rec-user");
+                var forceFallback = document.getElementById("cynaris-rec-force-fallback")?.checked || false;
+                var userId = userSelect ? userSelect.value : 3;
+
+                var btnRec = document.getElementById("btn-cynaris-gen-recs");
+                var loading = document.getElementById("cynaris-rec-loading");
+                var card = document.getElementById("cynaris-rec-result-card");
+                var pillProvider = document.getElementById("cynaris-rec-provider-pill");
+                var pillLatency = document.getElementById("cynaris-rec-latency-pill");
+                var alertFailover = document.getElementById("cynaris-rec-failover-alert");
+                var studentNameElem = document.getElementById("cynaris-rec-student-name");
+                var personaBadge = document.getElementById("cynaris-rec-persona-badge");
+                var summaryElem = document.getElementById("cynaris-rec-summary");
+                var strengthsElem = document.getElementById("cynaris-rec-strengths");
+                var gapsElem = document.getElementById("cynaris-rec-gaps");
+                var actionsElem = document.getElementById("cynaris-rec-actions");
+                var vivaElem = document.getElementById("cynaris-rec-viva");
+
+                if (btnRec) btnRec.disabled = true;
+                if (loading) loading.style.display = "block";
+                if (card) card.style.display = "none";
+
+                fetch(recsAjaxUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                    body: JSON.stringify({ user_id: parseInt(userId), force_fallback: forceFallback ? 1 : 0 })
+                })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.status === "success") {
+                        if (pillProvider) {
+                            pillProvider.innerText = data.provider + " (" + data.model + ")";
+                            pillProvider.className = data.fallback_triggered ? "badge badge-warning bg-warning text-dark" : "badge badge-info bg-info text-white";
+                        }
+                        if (pillLatency) pillLatency.innerText = "⚡ " + data.latency_ms + " ms";
+                        if (alertFailover) {
+                            alertFailover.style.display = data.fallback_triggered ? "block" : "none";
+                            if (data.primary_failure_reason) alertFailover.innerHTML = "⚠️ <strong>Failover Active:</strong> " + data.primary_failure_reason;
+                        }
+
+                        var p = data.profile;
+                        var r = data.recommendations;
+
+                        if (studentNameElem) studentNameElem.innerText = p.user.fullname + " (" + p.user.username + ")";
+                        if (personaBadge) personaBadge.innerText = p.metrics.persona_tier;
+                        if (summaryElem) summaryElem.innerText = r.performance_summary;
+
+                        if (strengthsElem && r.strengths) {
+                            strengthsElem.innerHTML = r.strengths.map(function(s) { return "<li>" + s + "</li>"; }).join("");
+                        }
+                        if (gapsElem && r.growth_areas) {
+                            gapsElem.innerHTML = r.growth_areas.map(function(g) { return "<li>" + g + "</li>"; }).join("");
+                        }
+                        if (actionsElem && r.action_plan) {
+                            actionsElem.innerHTML = r.action_plan.map(function(a) { return "<li>" + a + "</li>"; }).join("");
+                        }
+                        if (vivaElem) vivaElem.innerText = r.viva_prep_tip;
+
+                        if (card) card.style.display = "block";
+                    } else {
+                        alert("AI Recommendations Error: " + (data.message || "Unknown error"));
+                    }
+                })
+                .catch(function(err) {
+                    console.error("AI Recommendations error:", err);
+                    alert("Network error: " + err.message);
+                })
+                .finally(function() {
+                    if (loading) loading.style.display = "none";
+                    if (btnRec) btnRec.disabled = false;
                 });
             }
 
@@ -630,6 +800,9 @@ class block_cynaris_stats extends block_base {
                 var btnGenQuiz = document.getElementById("btn-cynaris-gen-quiz");
                 if (btnGenQuiz) btnGenQuiz.addEventListener("click", handleGenerateQuiz);
 
+                var btnGenRecs = document.getElementById("btn-cynaris-gen-recs");
+                if (btnGenRecs) btnGenRecs.addEventListener("click", handleGenerateRecommendations);
+
                 fetchAndUpdateStats();
             }
 
@@ -643,7 +816,7 @@ class block_cynaris_stats extends block_base {
         ';
 
         $this->content->text = $html;
-        $this->content->footer = 'Cynaris Full Stack Dev • Week 6 Day 2';
+        $this->content->footer = 'Cynaris Full Stack Dev • Week 6 Day 3';
 
         return $this->content;
     }
