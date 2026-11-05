@@ -120,21 +120,40 @@ class block_cynaris_stats extends block_base {
         $html .= html_writer::end_div(); // End row
 
         // Chart 1: Bar Chart (Course Completion %).
-        $html .= html_writer::start_div('chart-container mb-3 border rounded p-2 bg-white shadow-sm');
+        $html .= html_writer::start_div('chart-container mb-3 border rounded p-2 bg-white shadow-sm', [
+            'style' => 'position: relative; max-width: 100%; width: 100%; overflow: hidden;',
+        ]);
         $html .= html_writer::tag('p', '📈 Course Completion Rates (%)', ['class' => 'small font-weight-bold text-muted mb-1 text-center']);
-        $html .= html_writer::tag('canvas', '', ['id' => 'cynaris-completion-chart', 'height' => '170']);
+        $html .= html_writer::tag('canvas', '', [
+            'id' => 'cynaris-completion-chart',
+            'height' => '170',
+            'role' => 'img',
+            'aria-label' => 'Bar chart displaying course completion percentages',
+        ]);
         $html .= html_writer::end_div();
 
         // Chart 2: Line Chart (Student Login Frequency / 7-Day Activity).
-        $html .= html_writer::start_div('chart-container mb-2 border rounded p-2 bg-white shadow-sm');
+        $html .= html_writer::start_div('chart-container mb-2 border rounded p-2 bg-white shadow-sm', [
+            'style' => 'position: relative; max-width: 100%; width: 100%; overflow: hidden;',
+        ]);
         $html .= html_writer::tag('p', '📉 Student Login Frequency (Last 7 Days)', ['class' => 'small font-weight-bold text-muted mb-1 text-center']);
-        $html .= html_writer::tag('canvas', '', ['id' => 'cynaris-login-chart', 'height' => '170']);
+        $html .= html_writer::tag('canvas', '', [
+            'id' => 'cynaris-login-chart',
+            'height' => '170',
+            'role' => 'img',
+            'aria-label' => 'Line chart displaying student login frequency and grades',
+        ]);
         $html .= html_writer::end_div();
 
-        // Timestamp status badge.
+        // Timestamp status badge with ARIA Live.
         $html .= html_writer::start_div('d-flex justify-content-between align-items-center mt-2');
         $html .= html_writer::tag('small', '● Live AJAX Connected', ['class' => 'text-success font-weight-bold']);
-        $html .= html_writer::tag('small', 'Updated: ' . date('H:i:s'), ['id' => 'cynaris-last-updated', 'class' => 'text-muted']);
+        $html .= html_writer::tag('small', 'Updated: ' . date('H:i:s'), [
+            'id' => 'cynaris-last-updated',
+            'class' => 'text-muted',
+            'role' => 'status',
+            'aria-live' => 'polite',
+        ]);
         $html .= html_writer::end_div();
 
         $html .= html_writer::end_div(); // End dashboard container
