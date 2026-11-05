@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Cynaris Stats Block with Dynamic Chart.js Analytics & AI Tutor (Groq/OpenRouter Fallback).
+ * Cynaris Stats Block with Dynamic Chart.js Analytics, AI Tutor, and AI Quiz Generator.
  *
  * @package    block_cynaris_stats
  * @copyright  2026 Uday Reddy (b.udayreddy5643@gmail.com)
@@ -57,7 +57,7 @@ class block_cynaris_stats extends block_base {
     }
 
     /**
-     * Assemble and return block content with tabbed Analytics and AI Academic Tutor views.
+     * Assemble and return block content with tabbed Analytics, AI Tutor, and Quiz Generator views.
      *
      * @return stdClass
      */
@@ -79,11 +79,12 @@ class block_cynaris_stats extends block_base {
 
         $ajax_analytics_url = $CFG->wwwroot . '/blocks/cynaris_stats/ajax.php';
         $ajax_ai_url        = $CFG->wwwroot . '/blocks/cynaris_stats/ai_tutor_api.php';
+        $ajax_quiz_url      = $CFG->wwwroot . '/blocks/cynaris_stats/ai_quiz_api.php';
 
         $html = '';
         $html .= html_writer::start_div('cynaris-stats-wrapper p-2');
 
-        // Navigation Tabs: Analytics vs. AI Tutor
+        // Navigation Tabs: Analytics vs. AI Tutor vs. AI Quiz Generator
         $html .= '
         <div class="btn-group btn-group-sm w-100 mb-2" role="group" aria-label="Cynaris View Switcher">
             <button type="button" id="tab-btn-analytics" class="btn btn-primary" onclick="window.cynarisSwitchTab(\'analytics\')">
@@ -91,6 +92,9 @@ class block_cynaris_stats extends block_base {
             </button>
             <button type="button" id="tab-btn-aitutor" class="btn btn-outline-primary" onclick="window.cynarisSwitchTab(\'aitutor\')">
                 🤖 AI Tutor
+            </button>
+            <button type="button" id="tab-btn-quizgen" class="btn btn-outline-primary" onclick="window.cynarisSwitchTab(\'quizgen\')">
+                📝 AI Quiz
             </button>
         </div>
         ';
@@ -179,7 +183,6 @@ class block_cynaris_stats extends block_base {
         // =====================================================================
         $html .= html_writer::start_div('cynaris-tab-pane', ['id' => 'cynaris-pane-aitutor', 'style' => 'display: none;']);
 
-        // Dual Engine Architecture Banner
         $html .= '
         <div class="border rounded p-2 mb-2 bg-light shadow-sm">
             <div class="d-flex justify-content-between align-items-center mb-1">
@@ -243,6 +246,80 @@ class block_cynaris_stats extends block_base {
 
         $html .= html_writer::end_div(); // End tab pane aitutor
 
+        // =====================================================================
+        // TAB 3: AI Quiz Generator (MCQs -> Question Bank -> Quiz)
+        // =====================================================================
+        $html .= html_writer::start_div('cynaris-tab-pane', ['id' => 'cynaris-pane-quizgen', 'style' => 'display: none;']);
+
+        $html .= '
+        <div class="border rounded p-2 mb-2 bg-light shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="badge badge-primary bg-primary text-white">🎯 Groq MCQ Generator</span>
+                <span class="badge badge-info bg-info text-white">📚 Question Bank API</span>
+            </div>
+            <p class="small text-muted mb-0">Generate curriculum MCQs from syllabus directly to Question Bank and publish Quiz.</p>
+        </div>
+
+        <!-- Configuration Controls -->
+        <div class="mb-2">
+            <label class="small font-weight-bold text-secondary mb-1">Select Course:</label>
+            <select id="cynaris-quiz-course" class="form-control form-control-sm mb-2">
+                <option value="2">FS101: Full Stack Web Development (PHP & React)</option>
+                <option value="3">DB201: Enterprise Database Engineering & Architecture</option>
+            </select>
+
+            <div class="row g-2 mb-2">
+                <div class="col-6">
+                    <label class="small font-weight-bold text-secondary mb-1">Question Count:</label>
+                    <select id="cynaris-quiz-count" class="form-control form-control-sm">
+                        <option value="3">3 Questions</option>
+                        <option value="5" selected>5 Questions</option>
+                        <option value="10">10 Questions</option>
+                    </select>
+                </div>
+                <div class="col-6 d-flex align-items-end">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="cynaris-quiz-force-fallback" style="cursor: pointer;">
+                        <label class="form-check-label small text-muted font-weight-bold" for="cynaris-quiz-force-fallback" style="cursor: pointer;">
+                            Simulate Outage
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" id="btn-cynaris-gen-quiz" class="btn btn-success btn-sm w-100 font-weight-bold">
+                ⚡ Generate & Publish Quiz to Moodle
+            </button>
+        </div>
+
+        <!-- Quiz Loading Indicator -->
+        <div id="cynaris-quiz-loading" class="text-center my-3" style="display: none;">
+            <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+            <span class="small text-muted ml-2">Generating MCQs & writing to Question Bank...</span>
+        </div>
+
+        <!-- Quiz Generated Result Card -->
+        <div id="cynaris-quiz-result-card" class="border rounded p-2 bg-white shadow-sm mt-2" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-2">
+                <span id="cynaris-quiz-provider-pill" class="badge badge-success bg-success text-white"></span>
+                <span id="cynaris-quiz-latency-pill" class="badge badge-light bg-light text-muted border"></span>
+            </div>
+            <div id="cynaris-quiz-failover-alert" class="alert alert-warning py-1 px-2 small mb-2" style="display: none;">
+                ⚠️ <strong>Failover Active:</strong> Primary provider failed. Generated via fallback.
+            </div>
+            <div class="mb-2">
+                <h6 id="cynaris-quiz-title" class="font-weight-bold text-primary mb-1"></h6>
+                <small id="cynaris-quiz-meta" class="text-muted d-block mb-2"></small>
+                <a id="cynaris-quiz-launch-btn" href="#" target="_blank" class="btn btn-sm btn-outline-primary w-100 font-weight-bold">
+                    🚀 View / Take Quiz in Moodle
+                </a>
+            </div>
+            <div id="cynaris-quiz-preview-list" class="small border-top pt-2 mt-2" style="max-height: 200px; overflow-y: auto;"></div>
+        </div>
+        ';
+
+        $html .= html_writer::end_div(); // End tab pane quizgen
+
         $html .= html_writer::end_div(); // End stats wrapper
 
         // Chart.js CDN and Client-side Application Controller
@@ -254,25 +331,36 @@ class block_cynaris_stats extends block_base {
             var loginChart = null;
             var analyticsAjaxUrl = ' . json_encode($ajax_analytics_url) . ';
             var aiAjaxUrl        = ' . json_encode($ajax_ai_url) . ';
+            var quizAjaxUrl      = ' . json_encode($ajax_quiz_url) . ';
 
-            // Tab Switching Controller
+            // Tab Switching Controller (3 Tabs)
             window.cynarisSwitchTab = function(tab) {
                 var paneAnalytics = document.getElementById("cynaris-pane-analytics");
                 var paneAi = document.getElementById("cynaris-pane-aitutor");
+                var paneQuiz = document.getElementById("cynaris-pane-quizgen");
+
                 var btnAnalytics = document.getElementById("tab-btn-analytics");
                 var btnAi = document.getElementById("tab-btn-aitutor");
+                var btnQuiz = document.getElementById("tab-btn-quizgen");
 
-                if (!paneAnalytics || !paneAi || !btnAnalytics || !btnAi) return;
+                if (!paneAnalytics || !paneAi || !paneQuiz) return;
+
+                paneAnalytics.style.display = "none";
+                paneAi.style.display = "none";
+                paneQuiz.style.display = "none";
+
+                btnAnalytics.className = "btn btn-outline-primary";
+                btnAi.className = "btn btn-outline-primary";
+                btnQuiz.className = "btn btn-outline-primary";
 
                 if (tab === "aitutor") {
-                    paneAnalytics.style.display = "none";
                     paneAi.style.display = "block";
-                    btnAnalytics.className = "btn btn-outline-primary";
                     btnAi.className = "btn btn-primary";
+                } else if (tab === "quizgen") {
+                    paneQuiz.style.display = "block";
+                    btnQuiz.className = "btn btn-primary";
                 } else {
-                    paneAi.style.display = "none";
                     paneAnalytics.style.display = "block";
-                    btnAi.className = "btn btn-outline-primary";
                     btnAnalytics.className = "btn btn-primary";
                 }
             };
@@ -427,15 +515,10 @@ class block_cynaris_stats extends block_base {
                 if (loading) loading.style.display = "block";
                 if (card) card.style.display = "none";
 
-                var payload = {
-                    question: question,
-                    force_fallback: forceFallback ? 1 : 0
-                };
-
                 fetch(aiAjaxUrl, {
                     method: "POST",
                     headers: { "Content-Type": "application/json", "Accept": "application/json" },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ question: question, force_fallback: forceFallback ? 1 : 0 })
                 })
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
@@ -446,18 +529,12 @@ class block_cynaris_stats extends block_base {
                                 ? "badge badge-warning bg-warning text-dark" 
                                 : "badge badge-success bg-success text-white";
                         }
-                        if (pillLatency) {
-                            pillLatency.innerText = "⚡ " + data.latency_ms + " ms";
-                        }
+                        if (pillLatency) pillLatency.innerText = "⚡ " + data.latency_ms + " ms";
                         if (alertFailover) {
                             alertFailover.style.display = data.fallback_triggered ? "block" : "none";
-                            if (data.primary_failure_reason) {
-                                alertFailover.innerHTML = "⚠️ <strong>Failover Active:</strong> " + data.primary_failure_reason;
-                            }
+                            if (data.primary_failure_reason) alertFailover.innerHTML = "⚠️ <strong>Failover Active:</strong> " + data.primary_failure_reason;
                         }
-                        if (answerDiv) {
-                            answerDiv.innerText = data.answer;
-                        }
+                        if (answerDiv) answerDiv.innerText = data.answer;
                         if (card) card.style.display = "block";
                     } else {
                         alert("AI Tutor Error: " + (data.message || "Unknown error"));
@@ -465,7 +542,7 @@ class block_cynaris_stats extends block_base {
                 })
                 .catch(function(err) {
                     console.error("AI Tutor API fetch error:", err);
-                    alert("Network error contacting AI Tutor API: " + err.message);
+                    alert("Network error: " + err.message);
                 })
                 .finally(function() {
                     if (loading) loading.style.display = "none";
@@ -473,27 +550,85 @@ class block_cynaris_stats extends block_base {
                 });
             }
 
+            // 3. AI Quiz Generation Handler
+            function handleGenerateQuiz() {
+                var courseSelect = document.getElementById("cynaris-quiz-course");
+                var countSelect  = document.getElementById("cynaris-quiz-count");
+                var forceFallback = document.getElementById("cynaris-quiz-force-fallback")?.checked || false;
+
+                var courseId = courseSelect ? courseSelect.value : 2;
+                var count = countSelect ? countSelect.value : 5;
+
+                var btnGen = document.getElementById("btn-cynaris-gen-quiz");
+                var loading = document.getElementById("cynaris-quiz-loading");
+                var card = document.getElementById("cynaris-quiz-result-card");
+                var pillProvider = document.getElementById("cynaris-quiz-provider-pill");
+                var pillLatency = document.getElementById("cynaris-quiz-latency-pill");
+                var alertFailover = document.getElementById("cynaris-quiz-failover-alert");
+                var titleElem = document.getElementById("cynaris-quiz-title");
+                var metaElem = document.getElementById("cynaris-quiz-meta");
+                var launchBtn = document.getElementById("cynaris-quiz-launch-btn");
+                var previewList = document.getElementById("cynaris-quiz-preview-list");
+
+                if (btnGen) btnGen.disabled = true;
+                if (loading) loading.style.display = "block";
+                if (card) card.style.display = "none";
+
+                fetch(quizAjaxUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                    body: JSON.stringify({ course_id: parseInt(courseId), count: parseInt(count), force_fallback: forceFallback ? 1 : 0 })
+                })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.status === "success") {
+                        if (pillProvider) {
+                            pillProvider.innerText = data.provider + " (" + data.model + ")";
+                            pillProvider.className = data.fallback_triggered ? "badge badge-warning bg-warning text-dark" : "badge badge-success bg-success text-white";
+                        }
+                        if (pillLatency) pillLatency.innerText = "⚡ " + data.latency_ms + " ms";
+                        if (alertFailover) {
+                            alertFailover.style.display = data.fallback_triggered ? "block" : "none";
+                            if (data.primary_failure_reason) alertFailover.innerHTML = "⚠️ <strong>Failover Active:</strong> " + data.primary_failure_reason;
+                        }
+                        if (titleElem) titleElem.innerText = data.quiz.name;
+                        if (metaElem) metaElem.innerText = "Course: " + data.course.shortname + " • Questions in Bank: " + data.questions_count + " • Slots: " + data.quiz.slots_added;
+                        if (launchBtn) launchBtn.href = data.quiz.url;
+
+                        if (previewList && data.questions) {
+                            var qHtml = "<strong>Generated Question Bank Items:</strong><ol class=\"pl-3 mb-0 mt-1\">";
+                            data.questions.forEach(function(q) {
+                                qHtml += "<li><strong>" + q.question + "</strong><br><small class=\"text-success font-weight-bold\">✓ Answer: " + q[q.correct_answer] + "</small></li>";
+                            });
+                            qHtml += "</ol>";
+                            previewList.innerHTML = qHtml;
+                        }
+
+                        if (card) card.style.display = "block";
+                    } else {
+                        alert("AI Quiz Error: " + (data.message || "Unknown error"));
+                    }
+                })
+                .catch(function(err) {
+                    console.error("AI Quiz Generator error:", err);
+                    alert("Network error generating quiz: " + err.message);
+                })
+                .finally(function() {
+                    if (loading) loading.style.display = "none";
+                    if (btnGen) btnGen.disabled = false;
+                });
+            }
+
             // Event Listeners Initialization
             function initBlock() {
                 var btnRefresh = document.getElementById("btn-cynaris-refresh");
-                if (btnRefresh) {
-                    btnRefresh.addEventListener("click", fetchAndUpdateStats);
-                }
+                if (btnRefresh) btnRefresh.addEventListener("click", fetchAndUpdateStats);
 
                 var btnAskAi = document.getElementById("btn-cynaris-ask-ai");
-                if (btnAskAi) {
-                    btnAskAi.addEventListener("click", handleAskAi);
-                }
+                if (btnAskAi) btnAskAi.addEventListener("click", handleAskAi);
 
-                var aiInput = document.getElementById("cynaris-ai-input");
-                if (aiInput) {
-                    aiInput.addEventListener("keydown", function(e) {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handleAskAi();
-                        }
-                    });
-                }
+                var btnGenQuiz = document.getElementById("btn-cynaris-gen-quiz");
+                if (btnGenQuiz) btnGenQuiz.addEventListener("click", handleGenerateQuiz);
 
                 fetchAndUpdateStats();
             }
@@ -508,7 +643,7 @@ class block_cynaris_stats extends block_base {
         ';
 
         $this->content->text = $html;
-        $this->content->footer = 'Cynaris Full Stack Dev • Week 6 Day 1';
+        $this->content->footer = 'Cynaris Full Stack Dev • Week 6 Day 2';
 
         return $this->content;
     }
