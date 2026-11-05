@@ -1247,3 +1247,28 @@ table.quizreviewsummary td.cell {
         max-width: 100%;
     }
 }
+
+/* ==========================================================================
+   Fix #102: Quiz Countdown Timer Sticky Header Z-Index Clash (Issue #102)
+   Ensures the floating attempt timer remains visible and floats below .fixed-top navbar.
+   ========================================================================== */
+#page-mod-quiz-attempt #quiz-timer,
+.path-mod-quiz #quiz-timer-wrapper {
+    position: sticky !important;
+    top: 68px !important;
+    z-index: 1040 !important;
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+    border-radius: 6px;
+    padding: 8px 14px !important;
+    transition: top 0.2s ease-in-out;
+}
+
+@media (max-width: 576px) {
+    #page-mod-quiz-attempt #quiz-timer {
+        top: 56px !important;
+        font-size: 0.9rem !important;
+        padding: 6px 10px !important;
+    }
+}
